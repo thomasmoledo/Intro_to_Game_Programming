@@ -1,0 +1,28 @@
+#ifndef CS3113_H
+#define CS3113_H
+#define LOG(argument) std::cout << argument << '\n'
+
+#include "raylib.h"
+#include "rlgl.h"
+#include "raymath.h"
+#include <math.h>
+#include <time.h>
+#include <stdio.h>
+#include <map>
+#include <vector>
+#include <string>
+#include <iostream>
+
+enum AppStatus   { TERMINATED, RUNNING };
+enum TextureType { SINGLE, ATLAS       };
+
+Color ColorFromHex(const char *hex);
+void Normalise(Vector2 *vector);
+float GetLength(const Vector2 vector);
+Rectangle getUVRectangle(const Texture2D *texture, int index, int rows, int cols);
+void renderObject(const Texture2D *texture, const Vector2 *position, 
+                  const Vector2 *scale, float *angle);
+bool isColliding(const Vector2 postionA,  const Vector2 scaleA, 
+                 const Vector2 *positionB, const Vector2 *scaleB);
+
+#endif // CS3113_H
