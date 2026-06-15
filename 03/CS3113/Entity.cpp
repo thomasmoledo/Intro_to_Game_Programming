@@ -248,7 +248,7 @@ void Entity::AIActivate(Entity *target)
 }
 
 void Entity::update(float deltaTime, Entity *player, Map *map,
-    Entity *collidableEntities, int collisionCheckCount)
+    Entity *collidableEntities, int collisionCheckCount, float drag)
 {
     if (mEntityStatus == INACTIVE) return;
 
@@ -256,21 +256,11 @@ void Entity::update(float deltaTime, Entity *player, Map *map,
 
     resetColliderFlags();
 
-    mVelocity.x = mMovement.x * mSpeed;
-    mVelocity.y = mMovement.y * mSpeed;
-
     mVelocity.x += mAcceleration.x * deltaTime;
     mVelocity.y += mAcceleration.y * deltaTime;
 
-    // ––––– JUMPING ––––– //
-    if (mIsJumping)
-    {
-        // STEP 1: Immediately return the flag to its original false state
-        mIsJumping = false;
-
-        // STEP 2: The player now acquires an upward velocity
-        mVelocity.y -= mJumpingPower;
-    }
+    mVelocity.x *= (1.0f - drag * deltaTime);
+    mVelocity.y *= (1.0f - drag * deltaTime);
 
     mPosition.y += mVelocity.y * deltaTime;
     checkCollisionY(collidableEntities, collisionCheckCount);
