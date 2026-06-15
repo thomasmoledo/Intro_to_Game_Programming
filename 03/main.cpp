@@ -15,12 +15,14 @@ constexpr char  BG_COLOUR[] = "#000000",
                 QUIT       [] = "assets/quitButton.png",
                 RESUME     [] = "assets/resumeButton.png",
                 RESTART    [] = "assets/restartButton.png",
-                QUIT2      [] = "assets/quitButton.png";
+                QUIT2      [] = "assets/quitButton.png",
+                RESTART2   [] = "assets/restartButton.png",
+                QUIT3      [] = "assets/quitButton.png";
 
-constexpr int NUMBER_OF_BUTTONS = 5,
-              MAX_FUEL          = 15 * FPS;
+constexpr int NUMBER_OF_BUTTONS = 7,
+              MAX_FUEL          = 8 * FPS;
 
-const char *buttonTextures[NUMBER_OF_BUTTONS] = { START, QUIT, RESUME, RESTART, QUIT2 };
+const char *buttonTextures[NUMBER_OF_BUTTONS] = { START, QUIT, RESUME, RESTART, QUIT2, RESTART2, QUIT3 };
 
 constexpr Vector2 ORIGIN           = { SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 },
                   RESOLUTION       = { SCREEN_WIDTH, SCREEN_HEIGHT },
@@ -28,10 +30,12 @@ constexpr Vector2 ORIGIN           = { SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 },
                   MOUSE_SCALE      = { 1.0f, 1.0f },
                   BUTTON_SIZE      = { 320.0f, 180.0f };
 
-constexpr float ACCELERATION_OF_GRAVITY = 981.0f / 60,
+constexpr float ACCELERATION_OF_GRAVITY = 981.0f / 95,
                 FIXED_TIMESTEP          = 1.0f / 60.0f,
                 END_GAME_THRESHOLD      = 800.0f,
-                THRUST_ACCELERATION      = 1500.0f / 60;
+                THRUST_ACCELERATION     = 1500.0f / 45.0f,
+                DRAG                    = 0.25f,
+                VELOCITY_LIMIT          = 20.0f; 
 
 // Global Variables
 AppStatus gAppStatus   = RUNNING;
@@ -101,6 +105,8 @@ void initialise()
     gState.buttons[2].setPosition({ ORIGIN.x - 400.0f, ORIGIN.y + 150.0f }); // Resume
     gState.buttons[3].setPosition({ ORIGIN.x         , ORIGIN.y + 150.0f }); // Restart
     gState.buttons[4].setPosition({ ORIGIN.x + 400.0f, ORIGIN.y + 150.0f }); // Quit2
+    gState.buttons[5].setPosition({ ORIGIN.x - 300.0f, ORIGIN.y + 150.0f }); // Restart2
+    gState.buttons[6].setPosition({ ORIGIN.x + 300.0f, ORIGIN.y + 150.0f }); // Quit3
     
 
     /*
@@ -131,10 +137,11 @@ void initialise()
 void processInput()
 {
     gMousePosition = GetMousePosition();
-    gState.lander->resetMovement();
 
-    if (GetLength(gState.lander->getMovement()) > 1.0f)
-        gState.lander->normaliseMovement();
+    gState.lander->resetMovement();
+    
+    if (!gState.lander->isAccelerating())
+        gState.lander->setAcceleration({0.0f, ACCELERATION_OF_GRAVITY});
 
     if (gMenu == MAIN)
     {
@@ -153,7 +160,7 @@ void processInput()
         {
             if      (IsKeyDown(KEY_W) && gState.currFuel > 0) { accelerateUp(&gState, THRUST_ACCELERATION); }
             else if (IsKeyDown(KEY_S) && gState.currFuel > 0) { accelerateDown(&gState, THRUST_ACCELERATION); }
-            else if (IsKeyDown(KEY_A) && gState.currFuel > 0) { accelerateLeft(&gState, THRUST_ACCELERATION); }
+            if      (IsKeyDown(KEY_A) && gState.currFuel > 0) { accelerateLeft(&gState, THRUST_ACCELERATION); }
             else if (IsKeyDown(KEY_D) && gState.currFuel > 0) { accelerateRight(&gState, THRUST_ACCELERATION); }
         }
 
@@ -180,7 +187,23 @@ void processInput()
                     gPauseStatus = PLAYING;
                 }
         }
+    }
+
+    if (gMenu == END)
+    {
+        if (isColliding(gState.buttons[5].getPosition(), gState.buttons[5].getScale(), &gMousePosition, &MOUSE_SCALE))
+            if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+            {
+                resetGame(&gState, ORIGIN, MAX_FUEL, &gGameStatus);
+                generateNewSeed(&seed, &landZone1, &landZone2, SCREEN_WIDTH);
+                generateHeightmap(&gState, SCREEN_WIDTH, SCREEN_HEIGHT, seed, freq, amplifier,
+                    offset, octaves, landZone1, landZone2, landZoneSize);
+                gMenu = MAIN;
+                gPauseStatus = PLAYING;
+            }
         
+        if (isColliding(gState.buttons[6].getPosition(), gState.buttons[6].getScale(), &gMousePosition, &MOUSE_SCALE))
+            if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) gAppStatus = TERMINATED;
     }
 
     if (IsKeyPressed(KEY_Q) || WindowShouldClose()) gAppStatus = TERMINATED;
@@ -206,8 +229,8 @@ void update()
     {
         if (gMenu == GAME && gPauseStatus == PLAYING)
         {
-            gState.lander->update(FIXED_TIMESTEP, nullptr, nullptr, nullptr, 0);
-            checkCollision(&gState, landZone1, landZone2, landZoneSize, &gGameStatus, &gMenu, SCREEN_WIDTH);
+            gState.lander->update(FIXED_TIMESTEP, nullptr, nullptr, nullptr, 0, DRAG);
+            checkCollision(&gState, landZone1, landZone2, landZoneSize, &gGameStatus, &gMenu, SCREEN_WIDTH, VELOCITY_LIMIT);
         }
 
         if (gMusicStatus == ON) UpdateMusicStream(gState.bgm);
@@ -252,13 +275,17 @@ void render()
         if (gGameStatus == WIN)
         {
             renderObject(&gState.winScreen, &ORIGIN, &RESOLUTION, &bgAngle);
+            gState.buttons[5].render();
+            gState.buttons[6].render();
         }
 
         else if (gGameStatus == LOSE)
         {
             renderObject(&gState.loseScreen, &ORIGIN, &RESOLUTION, &bgAngle);
+            gState.buttons[5].render();
+            gState.buttons[6].render();
         }
-    }    
+    }
 
     EndDrawing();
 }
