@@ -39,7 +39,7 @@ void generateHeightmap(GameState *gState, int SCREEN_WIDTH, int SCREEN_HEIGHT, i
 void generateNewSeed(int *seed, float *landZone1, float *landZone2, int SCREEN_WIDTH);
 
 void checkCollision(GameState *gState, float landZone1, float landZone2, float landZoneSize,
-                    GameStatus *gGameStatus, Menu *gMenu, int SCREEN_WIDTH);
+                    GameStatus *gGameStatus, Menu *gMenu, int SCREEN_WIDTH, float VELOCITY_LIMIT);
 
 void resetGame(GameState *gState, Vector2 ORIGIN, int MAX_FUEL, GameStatus *gGameStatus);
 
