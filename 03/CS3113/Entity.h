@@ -34,10 +34,12 @@ private:
 
     bool  mIsJumping    = false;
     float mJumpingPower = 0.0f;
+    
 
     int   mSpeed;
     float mAngle;
 
+    bool mIsAccelerating    = false;
     bool mIsCollidingTop    = false;
     bool mIsCollidingBottom = false;
     bool mIsCollidingRight  = false;
@@ -59,6 +61,7 @@ private:
 
     void resetColliderFlags()
     {
+        mIsAccelerating    = false;
         mIsCollidingTop    = false;
         mIsCollidingBottom = false;
         mIsCollidingRight  = false;
@@ -101,7 +104,8 @@ public:
         Entity *player,
         Map    *map,
         Entity *collidableEntities,
-        int     collisionCheckCount
+        int     collisionCheckCount,
+        float   drag
     );
     void render();
     void normaliseMovement() { Normalise(&mMovement); }
@@ -157,6 +161,7 @@ public:
 
     bool isCollidingTop() const { return mIsCollidingTop; }
     bool isCollidingBottom() const { return mIsCollidingBottom; }
+    bool isAccelerating() const { return mIsAccelerating; }
 
     std::map<Direction, std::vector<int>> getAnimationAtlas() const
     {
@@ -165,6 +170,10 @@ public:
 
     void setPosition(Vector2 newPosition) { mPosition = newPosition; }
     void setMovement(Vector2 newMovement) { mMovement = newMovement; }
+    void setVelocity (Vector2 newVelocity)
+    {
+        mVelocity = newVelocity;
+    }
     void setAcceleration(Vector2 newAcceleration)
     {
         mAcceleration = newAcceleration;
