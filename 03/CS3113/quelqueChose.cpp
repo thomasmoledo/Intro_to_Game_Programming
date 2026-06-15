@@ -61,7 +61,7 @@ void generateNewSeed(int *seed, float *landZone1, float *landZone2, int SCREEN_W
 }
 
 void checkCollision(GameState *gState, float landZone1, float landZone2, float landZoneSize,
-                    GameStatus *gGameStatus, Menu *gMenu, int SCREEN_WIDTH)
+                    GameStatus *gGameStatus, Menu *gMenu, int SCREEN_WIDTH, float VELOCITY_LIMIT)
 {
     if (!gState->heightmap)
         return;
@@ -93,8 +93,8 @@ void checkCollision(GameState *gState, float landZone1, float landZone2, float l
         {
             if (overLandingZone)
             {
-                if (gState->lander->getVelocity().x < 200.0f ||
-                    gState->lander->getVelocity().y < 200.0f)
+                if (gState->lander->getVelocity().x < VELOCITY_LIMIT &&
+                    gState->lander->getVelocity().y < VELOCITY_LIMIT)
                 {
                     *gGameStatus = WIN;
                     *gMenu = END;
@@ -111,6 +111,8 @@ void checkCollision(GameState *gState, float landZone1, float landZone2, float l
 void resetGame(GameState *gState, Vector2 ORIGIN, int MAX_FUEL, GameStatus *gGameStatus)
 {
     gState->lander->setPosition({ORIGIN.x, ORIGIN.y - 300.0f});
+    gState->lander->setVelocity({0.0f, 0.0f});
+    gState->lander->setAcceleration({0.0f, 0.0f});
     gState->lander->activate();
     gState->currFuel = MAX_FUEL;
     *gGameStatus = NA;
@@ -144,6 +146,7 @@ void accelerateLeft(GameState *gState, float THRUST_ACCELERATION)
     acceleration.x -= THRUST_ACCELERATION;
     gState->lander->setAcceleration(acceleration);
     --gState->currFuel;
+    
 }
 
 void accelerateRight(GameState *gState, float THRUST_ACCELERATION)
