@@ -22,5 +22,7 @@ float GetLength(const Vector2 vector);
 Rectangle getUVRectangle(const Texture2D *texture, int index, int rows, int cols);
 void renderObject(const Texture2D *texture, const Vector2 *position, 
                   const Vector2 *scale, float *angle);
+bool isColliding(const Vector2 postionA,  const Vector2 scaleA, 
+                 const Vector2 *positionB, const Vector2 *scaleB);
 
 #endif // CS3113_H

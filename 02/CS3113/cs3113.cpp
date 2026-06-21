@@ -135,3 +135,16 @@ void renderObject(const Texture2D *texture, const Vector2 *position,
         *angle, WHITE
     );
 }
+
+bool isColliding(const Vector2 postionA,  const Vector2 scaleA, 
+                 const Vector2 *positionB, const Vector2 *scaleB)
+{
+    float xDistance = fabs(postionA.x - positionB->x) - 
+                      ((scaleA.x + scaleB->x) / 2.0f);
+    float yDistance = fabs(postionA.y - positionB->y) - 
+                      ((scaleA.y + scaleB->y) / 2.0f);
+
+    if (xDistance < 0.0f && yDistance < 0.0f) return true;
+
+    return false;
+}

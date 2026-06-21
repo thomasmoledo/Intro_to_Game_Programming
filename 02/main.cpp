@@ -11,29 +11,43 @@
 #include "CS3113/Entity.h"
 
 enum Menu        { MAINMENU, GAME, WIN, LOSE };
-enum Players     { ONE, TWO };
-enum BallCount   { UN, DEUX, TROIS };
+enum MainMenu    { UNO, DOS, TRES };
+enum Players     { UN, DEUX };
 enum MusicStatus { ON, OFF };
 
 // Global Constants
-constexpr int SCREEN_WIDTH    = 1920,
-              SCREEN_HEIGHT   = 1080,
-              FPS             = 120,
-              NUMBER_OF_BALLS = 3,
-              NUMBER_OF_WALLS = 4;
+constexpr int   SCREEN_WIDTH      = 1920,
+                SCREEN_HEIGHT     = 1080,
+                FPS               = 120,
+                NUMBER_OF_BALLS   = 3,
+                NUMBER_OF_WALLS   = 4,
+                NUMBER_OF_BUTTONS = 8;
 
 constexpr float BALL_SIZE = 125.0f,
                 WALL_WIDTH = 50.0f,
                 WALL_PADDING = 75.0f;
 
-constexpr char    BG_COLOUR[] = "#ffffff",
-                  PURPLE_GB[] = "assets/purpleGB.png",
-                  RED_GB   [] = "assets/redGB.png",
-                  GREEN_GB [] = "assets/greenGB.png";
+constexpr char  BG_COLOUR[] = "#ffffff",
+                PURPLE_GB[] = "assets/purpleGB.png",
+                RED_GB   [] = "assets/redGB.png",
+                GREEN_GB [] = "assets/greenGB.png",
+                
+                // Buttons
+                PLAY       [] = "assets/mainmenu/play.png",
+                QUIT       [] = "assets/mainmenu/quit.png",
+                BACK       [] = "assets/mainmenu/back.png",
+                ONE_PLYR   [] = "assets/mainmenu/onePlayer.png",
+                TWO_PLYR   [] = "assets/mainmenu/twoPlayers.png",
+                ONE_BALL   [] = "assets/mainmenu/oneBall.png",
+                TWO_BALL   [] = "assets/mainmenu/twoBalls.png",
+                THREE_BALL [] = "assets/mainmenu/threeBalls.png";
 
 const char *ballTextures[3] = { PURPLE_GB, RED_GB, GREEN_GB };
+const char *buttonTextures[8] = { PLAY, QUIT, BACK, ONE_PLYR, TWO_PLYR,
+                                  ONE_BALL, TWO_BALL, THREE_BALL };
 
-constexpr Vector2 ORIGIN = { SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 };
+constexpr Vector2 ORIGIN      = { SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 },
+                  BUTTON_SIZE = { 400.0f, 150.0f };
 
 Vector2 gBackgroundPos = ORIGIN,
         gBackgroundScale = { 1920, 1080 };
@@ -41,8 +55,9 @@ float   gBackgroundAngle = 0.0f;
 
 // Global Variables
 AppStatus gAppStatus = RUNNING;
-Players gPlayerCount = ONE;
-Menu gMenu = GAME;
+Players gPlayerCount = UN;
+Menu gMenu = MAINMENU;
+MainMenu gMainMenu = UNO;
 Texture2D MenuBackground,
           GameBackground,
           WinScreen,
@@ -61,7 +76,11 @@ float gPreviousTicks   = 0.0f;
 Entity *PlayerOne = nullptr,
        *PlayerTwo = nullptr,
        *Balls     = nullptr,
-       *Walls     = nullptr;
+       *Walls     = nullptr,
+       *Buttons   = nullptr;
+
+Vector2 gMousePosition = GetMousePosition(),
+        gMouseScale = { 1.0f, 1.0f };
 
 // Function Declarations
 void initialise();
@@ -80,10 +99,30 @@ void initialise() {
     PlayMusicStream(HeavenlyAudio);
 
     // Backgrounds
-    // MenuBackground = LoadTexture("assets/menuBackground.png");
+    MenuBackground = LoadTexture("assets/mainmenu/menuBackground.png");
     GameBackground = LoadTexture("assets/gameBackground.png");
     WinScreen      = LoadTexture("assets/winScreen.png");
     LoseScreen     = LoadTexture("assets/loseScreen.png");
+
+    // Buttons
+    Buttons = new Entity[NUMBER_OF_BUTTONS];
+    for ( int i = 0; i < NUMBER_OF_BUTTONS; ++i ) {
+        Buttons[i].setTexture(buttonTextures[i]);
+        Buttons[i].setEntityType(NONE);
+        Buttons[i].setScale({BUTTON_SIZE.x, BUTTON_SIZE.y});
+        Buttons[i].setColliderDimensions({BUTTON_SIZE.x, BUTTON_SIZE.y});
+        Buttons[i].setPosition( ORIGIN );
+    }
+
+    // Button Positions
+    Buttons[0].setPosition({ ORIGIN.x - 300.0f, ORIGIN.y + 250.0f }); // Play
+    Buttons[1].setPosition({ ORIGIN.x + 300.0f, ORIGIN.y + 250.0f }); // Quit
+    Buttons[2].setPosition({ ORIGIN.x         , ORIGIN.y + 400.0f }); // Back
+    Buttons[3].setPosition({ ORIGIN.x - 300.0f, ORIGIN.y + 200.0f }); // OnePlayer
+    Buttons[4].setPosition({ ORIGIN.x + 300.0f, ORIGIN.y + 200.0f }); // TwoPlayer
+    Buttons[5].setPosition({ ORIGIN.x - 500.0f, ORIGIN.y + 200.0f }); // OneBall
+    Buttons[6].setPosition({ ORIGIN.x         , ORIGIN.y + 200.0f }); // OneBall
+    Buttons[7].setPosition({ ORIGIN.x + 500.0f, ORIGIN.y + 200.0f }); // OneBall
 
     // Players
     float sizeRatio  = 1.0f / 3.0f;
@@ -104,8 +143,7 @@ void initialise() {
 
     // Balls
     Balls = new Entity[NUMBER_OF_BALLS];
-    for ( int i = 0; i < NUMBER_OF_BALLS; ++i )
-    {
+    for ( int i = 0; i < NUMBER_OF_BALLS; ++i ) {
         Balls[i].setTexture(ballTextures[i]);
         Balls[i].setEntityType(BALL);
         Balls[i].setScale({BALL_SIZE, BALL_SIZE});
@@ -121,7 +159,7 @@ void initialise() {
 
     // Walls
     Walls = new Entity[NUMBER_OF_WALLS];
-    for ( int i = 0; i < NUMBER_OF_WALLS; ++i )     {
+    for ( int i = 0; i < NUMBER_OF_WALLS; ++i ) {
         Walls[i].setTexture("assets/placeholder.png");
         Walls[i].setEntityType(WALL);
 
@@ -147,35 +185,66 @@ void processInput() {
     PlayerOne->resetMovement();
     PlayerTwo->resetMovement();
 
-    // Player Input
-    if (gMenu == GAME) {
-        if (IsKeyDown(KEY_W)) PlayerOne->moveUp();
-        if (IsKeyDown(KEY_S)) PlayerOne->moveDown();
+    if ( gMenu == MAINMENU ) {
+        gMousePosition = GetMousePosition();
         
-        if ( gPlayerCount == TWO ) {
-            if (IsKeyDown(KEY_UP)) PlayerTwo->moveUp();
-            if (IsKeyDown(KEY_DOWN)) PlayerTwo->moveDown();
+        if ( gMainMenu == UNO ) {
+            if (isColliding(Buttons[0].getPosition(), Buttons[0].getScale(), &gMousePosition, &gMouseScale))
+                if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) gMainMenu = DOS;
+
+            if (isColliding(Buttons[1].getPosition(), Buttons[1].getScale(), &gMousePosition, &gMouseScale))
+                if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) gAppStatus = TERMINATED;
+        }
+
+        else if ( gMainMenu == DOS ) {
+            if (isColliding(Buttons[2].getPosition(), Buttons[1].getScale(), &gMousePosition, &gMouseScale))
+                if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) gMainMenu = UNO;
+
+            if (isColliding(Buttons[3].getPosition(), Buttons[1].getScale(), &gMousePosition, &gMouseScale))
+                if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) 
+                    { gPlayerCount = UN; gMainMenu = TRES; }
+
+            if (isColliding(Buttons[4].getPosition(), Buttons[1].getScale(), &gMousePosition, &gMouseScale))
+                if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) 
+                    { gPlayerCount = DEUX; gMainMenu = TRES; }
+        }
+
+        else if ( gMainMenu == TRES ) {
+            if (isColliding(Buttons[2].getPosition(), Buttons[1].getScale(), &gMousePosition, &gMouseScale))
+                if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) gMainMenu = DOS;
+
+            if (isColliding(Buttons[5].getPosition(), Buttons[1].getScale(), &gMousePosition, &gMouseScale))
+                if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+                    { currBallCount = 1; gMenu = GAME; }
+
+            if (isColliding(Buttons[6].getPosition(), Buttons[1].getScale(), &gMousePosition, &gMouseScale))
+                if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+                    { currBallCount = 2; gMenu = GAME; }
+
+            if (isColliding(Buttons[7].getPosition(), Buttons[1].getScale(), &gMousePosition, &gMouseScale))
+                if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+                    { currBallCount = 3; gMenu = GAME; }
         }
     }
 
-    // Settings
-    if (IsKeyPressed(KEY_M)) gMusicStatus  = (gMusicStatus == ON ? OFF : ON);
+    if ( gMenu == GAME ) {
+        if (IsKeyDown(KEY_W)) PlayerOne->moveUp();
+        if (IsKeyDown(KEY_S)) PlayerOne->moveDown();
+        
+        if ( gPlayerCount == DEUX ) {
+            if (IsKeyDown(KEY_UP)) PlayerTwo->moveUp();
+            if (IsKeyDown(KEY_DOWN)) PlayerTwo->moveDown();
+        }
 
-    if (gMenu == GAME) {
-        if (IsKeyPressed(KEY_T))     gPlayerCount  = (gPlayerCount == ONE ? TWO : ONE);
+        if (IsKeyPressed(KEY_T))     gPlayerCount  = (gPlayerCount == UN ? DEUX : UN);
         if (IsKeyPressed(KEY_ONE))   currBallCount = 1;
         if (IsKeyPressed(KEY_TWO))   currBallCount = 2;
         if (IsKeyPressed(KEY_THREE)) currBallCount = 3;
     }
 
-    // Temporary
-    if (IsKeyPressed(KEY_U)) gMenu = MAINMENU;
-    if (IsKeyPressed(KEY_I)) gMenu = GAME;
-    if (IsKeyPressed(KEY_O)) gMenu = WIN;
-    if (IsKeyPressed(KEY_P)) gMenu = LOSE;
-
-    // Exit Game
+    // Global
     if (IsKeyPressed(KEY_Q) || WindowShouldClose()) gAppStatus = TERMINATED;
+    if (IsKeyPressed(KEY_M)) gMusicStatus  = (gMusicStatus == ON ? OFF : ON);
 }
 
 void update() {
@@ -186,7 +255,7 @@ void update() {
 
     if ( gMenu == GAME ) {
         // Player(s)
-        if ( gPlayerCount == ONE ) {
+        if ( gPlayerCount == UN ) {
             int closestBall  = 0;
             int currBallDist = 0;
             float closestLen = 1000000.0f;
@@ -194,7 +263,7 @@ void update() {
                 float xDistance = fabs(PlayerTwo->getPosition().x - Balls[i].getPosition().x);
                 float yDistance = fabs(PlayerTwo->getPosition().y - Balls[i].getPosition().y);
                 currBallDist = GetLength({ xDistance, yDistance });
-                if ( currBallDist < closestLen) {
+                if ( currBallDist < closestLen ) {
                     closestLen = currBallDist;
                     closestBall = i;
                 }
@@ -252,6 +321,19 @@ void render() {
 
     if ( gMenu == MAINMENU ) {
         renderObject(&MenuBackground, &gBackgroundPos, &gBackgroundScale, &gBackgroundAngle);
+        if ( gMainMenu == UNO ) {
+            Buttons[0].render();
+            Buttons[1].render();
+        } else if ( gMainMenu == DOS ) {
+            Buttons[2].render();
+            Buttons[3].render();
+            Buttons[4].render();
+        } else if( gMainMenu == TRES ) {
+            Buttons[2].render();
+            Buttons[5].render();
+            Buttons[6].render();
+            Buttons[7].render();
+        }
     } 
 
     else if ( gMenu == GAME ) {
