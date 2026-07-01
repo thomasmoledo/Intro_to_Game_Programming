@@ -5,7 +5,8 @@
 class Player : public Entity
 {
 private:
-    std::vector<Projectile*> mProjectiles;
+    Projectile *mProjectiles;
+    Texture2D playerAttack;
 
     float mAttackDamage = 20.0f,
           mAttackCooldown,
@@ -21,8 +22,6 @@ private:
          canShoot = true;
 
 public:
-    Player();
-    Player(Vector2 position, Vector2 scale, const char *textureFilepath, EntityType entityType);
     Player(
         Vector2                               position,
         Vector2                               scale,
@@ -71,7 +70,6 @@ public:
     void setMaxVelocityX(float newVelocity) { mMaxVelocityX = newVelocity; }
     void setMaxVelocityY(float newVelocity) { mMaxVelocityY = newVelocity; }
 
-    void setProjectileVector(std::vector<Projectile*> *vectorPtr) { mProjectiles = *vectorPtr; }
     void shoot(Vector2 mousePos);
     void takeDamage(float damage) { mCurrHealth -= damage; }
 };

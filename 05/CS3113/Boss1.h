@@ -6,7 +6,8 @@
 class Boss1 : public Entity
 {
 private:
-    std::vector<Projectile*> mProjectiles;
+    Projectile *mProjectiles;
+    Texture2D bossAttack;
 
     float mAttackDamage,
           mAttackCooldown,
@@ -18,21 +19,11 @@ private:
          canShoot;
 
 public:
-    Boss1();
     Boss1(
         Vector2     position,
         Vector2     scale,
         const char *textureFilepath,
         EntityType  entityType
-    );
-    Boss1(
-        Vector2                               position,
-        Vector2                               scale,
-        const char                           *textureFilepath,
-        TextureType                           textureType,
-        Vector2                               spriteSheetDimensions,
-        std::map<Direction, std::vector<int>> animationAtlas,
-        EntityType                            entityType
     );
     ~Boss1();
 

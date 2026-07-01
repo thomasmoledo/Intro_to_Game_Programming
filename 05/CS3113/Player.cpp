@@ -1,22 +1,34 @@
 #include "Player.h"
 
-Player::Player() : Entity(), mCurrHealth{ 100.0f }, mMaxHealth{ 100.0f }, mAttackDamage{ 10.0f },
-    mAttackCooldown{ 0.5f }, mDragFactorX{ 0.5f }, mDragFactorY { 0.00003f } {}
-
-Player::Player(Vector2 position, Vector2 scale, const char *textureFilepath, EntityType entityType) :
-    Entity(position, scale, textureFilepath, entityType), mCurrHealth{ 100.0f }, mMaxHealth{ 100.0f },
-    mAttackDamage{ 10.0f }, mAttackCooldown{ 0.5f }, mDragFactorX{ 0.5f }, mDragFactorY { 0.00003f } {}
-
 Player::Player(Vector2 position, Vector2 scale, const char *textureFilepath, TextureType textureType,
     Vector2 spriteSheetDimensions, std::map<Direction, std::vector<int>> animationAtlas, EntityType entityType) :
     Entity(position, scale, textureFilepath, textureType, spriteSheetDimensions, animationAtlas, entityType), 
     mCurrHealth{ 100.0f }, mMaxHealth{ 100.0f }, mAttackDamage{ 10.0f }, mAttackCooldown{ 0.5f },
-    mDragFactorX{ 0.5f }, mDragFactorY { 0.00003f } {}
-
-Player::~Player() 
+    mDragFactorX{ 0.5f }, mDragFactorY { 0.00003f }, playerAttack { LoadTexture("assets/playerAttack.png") }
 {
-    for (Projectile *p : mProjectiles) delete p;
+    mProjectiles = new Projectile[25];
+    std::map<Direction, std::vector<int>> projectileAnimationAtlas = { { RIGHT, { 0 } } };
+
+    for (int i = 0; i < 25; ++i)
+    {
+        mProjectiles[i].setPosition(mPosition);
+        mProjectiles[i].setScale({ 50, 50 });
+        mProjectiles[i].setTexture(&playerAttack);
+        mProjectiles[i].setEntityType(ATTACK);
+        mProjectiles[i].setSpriteSheetDimensions({ 1, 1 });
+        mProjectiles[i].setAnimationAtlas(projectileAnimationAtlas);
+        mProjectiles[i].setSpeed(500.0f);
+        mProjectiles[i].setDamage(mAttackDamage);
+        mProjectiles[i].deactivate();
+
+        mProjectiles[i].setColliderDimensions({
+            mProjectiles[i].getScale().x / 1.5f,
+            mProjectiles[i].getScale().y / 1.5f
+        });
+    }
 }
+
+Player::~Player() { delete [] mProjectiles; }
 
 void Player::update(float deltaTime, Entity *boss, Map *map,
                     Entity *collidableEntities, int collisionCheckCount)
@@ -44,21 +56,13 @@ void Player::update(float deltaTime, Entity *boss, Map *map,
     checkCollisionX(collidableEntities, collisionCheckCount);
     checkCollisionX(map);
 
-    for (size_t i = 0; i < mProjectiles.size(); ++i)
-        mProjectiles[i]->update(deltaTime, boss);
+    for (int i = 0; i < 25; ++i)
+        mProjectiles[i].update(deltaTime, boss);
 
-    for (size_t i = 0; i < mProjectiles.size(); ++i)
+    for (int i = 0; i < 25; ++i)
     {
-        if (Vector2Distance(mPosition, mProjectiles[i]->getPosition()) > 2560.0f)
-            mProjectiles[i]->deactivate();
-
-        if (!mProjectiles[i]->isActive()) 
-        {
-            delete mProjectiles[i];
-            mProjectiles[i] = nullptr;
-            mProjectiles.erase(mProjectiles.begin() + i);
-            --i;
-        }
+        if (Vector2Distance(mPosition, mProjectiles[i].getPosition()) > 2560.0f)
+            mProjectiles[i].deactivate();
     }
 
     if (!canShoot) 
@@ -70,12 +74,9 @@ void Player::update(float deltaTime, Entity *boss, Map *map,
     
     if (IsKeyPressed(KEY_SPACE) || IsKeyReleased(KEY_SPACE)) resetVelocityY();
     
-    // if (mTextureType == ATLAS && GetLength(mMovement) != 0 && mIsCollidingBottom)
     if (mTextureType == ATLAS && GetLength(mVelocity))
         animate(deltaTime);
 }
-
-std::map<Direction, std::vector<int>> projectileAnimationAtlas = { { RIGHT, { 0 } } };
 
 void Player::shoot(Vector2 mousePos)
 {
@@ -83,18 +84,19 @@ void Player::shoot(Vector2 mousePos)
     canShoot = false;
     mCounter = 0.0f;
 
-    mProjectiles.push_back(
-        new Projectile{
-            mPosition, { 50, 50 }, "assets/playerAttack.png", ATLAS, { 1, 1 },
-            projectileAnimationAtlas, ATTACK, 500.0f, mAttackDamage
+    for (int i = 0; i < 25; ++i)
+    {
+        if (!mProjectiles[i].isActive())
+        {
+            mProjectiles[i].setPosition(mPosition);
+            mProjectiles[i].shootPlayer(mousePos);
+            break;
         }
-    );
-    
-    mProjectiles[mProjectiles.size()-1]->shootPlayer(mousePos);
+    }
 }
 
 void Player::render()
 {
     Entity::render();
-    for (size_t i = 0; i < mProjectiles.size(); ++i) mProjectiles[i]->render();
+    for (int i = 0; i < 25; ++i) mProjectiles[i].render();
 }

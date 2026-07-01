@@ -1,18 +1,34 @@
 #include "Boss3.h"
 
-Boss3::Boss3() : Entity(), mCurrHealth{ 800.0f }, mMaxHealth{ 800.0f },
-    mAttackDamage{ 10.0f }, mAttackCooldown{ 0.3f }, isAlive { true } {}
-
 Boss3::Boss3(Vector2 position, Vector2 scale, const char *textureFilepath, EntityType entityType) :
-    Entity(position, scale, textureFilepath, entityType), mCurrHealth{ 100 }, mMaxHealth{ 100 },
-    mAttackDamage{ 10.0f }, mAttackCooldown{ 0.3f }, isAlive { true } {}
+    Entity(position, scale, textureFilepath, entityType), mCurrHealth{ 300 }, mMaxHealth{ 300 },
+    mAttackDamage{ 10.0f }, mAttackCooldown{ 0.1f }, isAlive { true }, mCircleCounter { 5.25f }, mCounter { 0.0f },
+    canShoot { true },
+    bossAttack { LoadTexture("assets/starMap.png") }
+{
+    mProjectiles = new Projectile[100];
+    std::map<Direction, std::vector<int>> bossAnimationAtlas = { { RIGHT, { 0, 1, 2 } } };
+    for (int i = 0; i < 100; ++i)
+    {
+        mProjectiles[i].setPosition(mPosition);
+        mProjectiles[i].setScale({ 100, 100 });
+        mProjectiles[i].setTexture(&bossAttack);
+        mProjectiles[i].setEntityType(ATTACK);
+        mProjectiles[i].setSpriteSheetDimensions({ 1, 3 });
+        mProjectiles[i].setAnimationAtlas(bossAnimationAtlas);
+        mProjectiles[i].setSpeed(350.0f);
+        mProjectiles[i].setDamage(mAttackDamage);
+        mProjectiles[i].setTextureType(ATLAS);
+        mProjectiles[i].deactivate();
 
-Boss3::Boss3(Vector2 position, Vector2 scale, const char *textureFilepath, TextureType textureType,
-    Vector2 spriteSheetDimensions, std::map<Direction, std::vector<int>> animationAtlas, EntityType entityType) :
-    Entity(position, scale, textureFilepath, textureType, spriteSheetDimensions, animationAtlas, entityType),
-    mCurrHealth{ 100 }, mMaxHealth{ 100 }, mAttackDamage{ 10.0f }, mAttackCooldown{ 0.5f }, isAlive { true } {}
+        mProjectiles[i].setColliderDimensions({
+            mProjectiles[i].getScale().x / 2.0f,
+            mProjectiles[i].getScale().y / 2.0f
+        });
+    }
+}
 
-Boss3::~Boss3() {}
+Boss3::~Boss3() { delete [] mProjectiles; UnloadTexture(bossAttack); }
 
 void Boss3::update(float deltaTime, Entity *player, Map *map,
                   Entity *collidableEntities, int collisionCheckCount)
@@ -21,20 +37,13 @@ void Boss3::update(float deltaTime, Entity *player, Map *map,
     ++mCircleCounter;
     
     if (player) {
-        for (size_t i = 0; i < mProjectiles.size(); ++i)
-        mProjectiles[i]->update(deltaTime, player);
+        for (int i = 0; i < 100; ++i)
+            mProjectiles[i].update(deltaTime, player);
 
-    for (size_t i = 0; i < mProjectiles.size(); ++i)
-    {
-        if (Vector2Distance(mPosition, mProjectiles[i]->getPosition()) > 2560.0f)
-            mProjectiles[i]->deactivate();
-
-        if (!mProjectiles[i]->isActive()) 
+        for (int i = 0; i < 100; ++i)
         {
-            delete mProjectiles[i];
-            mProjectiles[i] = nullptr;
-            mProjectiles.erase(mProjectiles.begin() + i);
-            --i;
+            if (Vector2Distance(mPosition, mProjectiles[i].getPosition()) > 2560.0f)
+                mProjectiles[i].deactivate();
         }
     }
 
@@ -44,30 +53,28 @@ void Boss3::update(float deltaTime, Entity *player, Map *map,
         if (mCounter >= mAttackCooldown) 
             { canShoot = true; mCounter = 0.0f; }
     }
-    }
 }
-
-std::map<Direction, std::vector<int>> boss3AnimationAtlas = { { RIGHT, { 0, 1, 2 } } };
 
 void Boss3::shoot(Entity *player)
 {
     if (!canShoot) return;
     canShoot = false;
     mCounter = 0.0f;
-
-    mProjectiles.push_back(
-        new Projectile{
-            mPosition, { 100, 100 }, "assets/starMap.png", ATLAS, { 1, 3 },
-            boss3AnimationAtlas, ATTACK, 500.0f, mAttackDamage
-        }
-    );
     
-    mProjectiles[mProjectiles.size()-1]->shootBoss3(player, mCircleCounter);
+    for (int i = 0; i < 100; ++i)
+    {
+        if (!mProjectiles[i].isActive())
+        {
+            mProjectiles[i].setPosition(mPosition);
+            mProjectiles[i].shootBoss3(player, mCircleCounter);
+            break;
+        }
+    }
     ++mCircleCounter;
 }
 
 void Boss3::render()
 {
     Entity::render();
-    for (size_t i = 0; i < mProjectiles.size(); ++i) mProjectiles[i]->render();
+    for (int i = 0; i < 100; ++i) mProjectiles[i].render();
 }

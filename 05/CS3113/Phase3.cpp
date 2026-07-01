@@ -58,7 +58,7 @@ void Phase3::initialise()
     float sizeRatioBoss = 1.0f;
 
     mGameState.boss = new Boss3(
-        { mOrigin.x + 200.0f, mOrigin.y - 200.0f }, // position
+        { mOrigin.x + 400.0f, mOrigin.y - 500.0f }, // position
         { 300.0f * sizeRatioBoss, 300.0f },         // scale
         "assets/cat3.png",                          // texture file address
         BOSS                                        // entity type
@@ -102,6 +102,7 @@ void Phase3::update(float deltaTime)
     mGameState.boss->shoot(mGameState.player);
 
     bossHealthRatio = mGameState.boss->getCurrHealth() / mGameState.boss->getMaxHealth();
+    playerHealthRatio = mGameState.player->getCurrHealth() / mGameState.player->getMaxHealth();
     if (bossHealthRatio <= 0.0f) mGameState.nextSceneID = WIN_SCREEN;
     if (playerHealthRatio <= 0.0f) mGameState.nextSceneID = LOSE_SCREEN;
 }

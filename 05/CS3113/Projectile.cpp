@@ -1,16 +1,16 @@
 #include "Projectile.h"
 
-Projectile::Projectile() : Entity() {}
+Projectile::Projectile() : Entity(), mDamage { 0.0f }, hitmarker { LoadSound("assets/hitmarker.mp3") }
+{
+    SetSoundVolume(hitmarker, 0.33f);
+}
 
 Projectile::Projectile(Vector2 startPos, Vector2 scale, const char *textureFilepath,
     TextureType textureType, Vector2 spriteSheetDimensions, std::map<Direction,
     std::vector<int>> animationAtlas, EntityType entityType, float speed, float dmg) 
     : Entity(startPos, scale, textureFilepath, textureType, spriteSheetDimensions, animationAtlas, entityType),
-    mDamage { dmg }, hitmarker { LoadSound("assets/hitmarker.mp3") } 
-    {
-        mSpeed = speed;
-        SetSoundVolume(hitmarker, 0.33f);
-    }
+    mDamage { dmg }, hitmarker { LoadSound("assets/hitmarker.mp3") } {}
+
 
 Projectile::~Projectile() {}
 
@@ -24,6 +24,7 @@ void Projectile::hitTarget(Entity *target)
 
 void Projectile::shootPlayer(Vector2 mousePos)
 {
+    activate();
     mMovement = {
         mousePos.x - ORIGIN.x,
         mousePos.y - ORIGIN.y
@@ -33,6 +34,7 @@ void Projectile::shootPlayer(Vector2 mousePos)
 
 void Projectile::shootBoss1(Entity *player)
 {
+    activate();
     mMovement = {
         player->getPosition().x - mPosition.x,
         player->getPosition().y - mPosition.y
@@ -42,9 +44,10 @@ void Projectile::shootBoss1(Entity *player)
 
 void Projectile::shootBoss3(Entity *player, float variable)
 {
+    activate();
     mMovement = {
-        10 * sin(variable * 6),
-        10 * cos(variable * 6)
+        10 * sin(variable * 3),
+        10 * cos(variable * 3)
     };
     Normalise(&mMovement);
 }

@@ -144,6 +144,13 @@ public:
     virtual bool isFlying()  const { return false; }
 
     std::map<Direction, std::vector<int>> getAnimationAtlas() const { return mAnimationAtlas; }
+    void setAnimationAtlas(std::map<Direction, std::vector<int>> newAtlas)
+    {
+        mAnimationAtlas = newAtlas;
+
+        if (mTextureType == ATLAS && mAnimationAtlas.count(mDirection))
+            mAnimationIndices = mAnimationAtlas.at(mDirection);
+    }
 
     void setPosition(Vector2 newPosition)
         { mPosition = newPosition;                 }
@@ -155,6 +162,8 @@ public:
         { mScale = newScale;                       }
     void setTexture(const char *textureFilepath)
         { mTexture = LoadTexture(textureFilepath); }
+    void setTexture(Texture2D *texture)
+        { mTexture = *texture; }
     void setColliderDimensions(Vector2 newDimensions)
         { mColliderDimensions = newDimensions;     }
     void setSpriteSheetDimensions(Vector2 newDimensions)
@@ -179,6 +188,13 @@ public:
         { mAIState = newState;                     }
     void setAIType(AIType newType)
         { mAIType = newType;                       }
+    void setTextureType(TextureType newType)
+    {
+        mTextureType = newType;
+
+        if (mTextureType == ATLAS && mAnimationAtlas.count(mDirection))
+            mAnimationIndices = mAnimationAtlas.at(mDirection);
+    }
 
     // For Player
     virtual void moveUp(float acceleration) { return; }

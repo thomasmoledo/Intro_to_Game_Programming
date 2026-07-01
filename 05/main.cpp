@@ -87,11 +87,11 @@ void processInput()
             gCurrentScene->getState().buttons[1].getScale(), &gMousePos, &MOUSE_SCALE)
             && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) gCurrentScene->showControls();
 
-        else if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) gCurrentScene->hideControls();
-
         else if (isColliding(gCurrentScene->getState().buttons[2].getPosition(),
             gCurrentScene->getState().buttons[2].getScale(), &gMousePos, &MOUSE_SCALE)
             && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) gAppStatus = TERMINATED;
+
+        else if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) gCurrentScene->hideControls();
     }
         
     else if ((gCurrentScene == gLevels[WIN_SCREEN] ||

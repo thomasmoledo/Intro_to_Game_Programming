@@ -23,6 +23,9 @@ public:
     void shootBoss3(Entity *player, float variable);
     
     void update(float deltaTime, Entity *target);
+
+    float getDamage() const { return mDamage; }
+    void setDamage(float newDamage) { mDamage = newDamage; }
 };
 
 #endif // PROJECTILE_H

@@ -1,18 +1,33 @@
 #include "Boss1.h"
 
-Boss1::Boss1() : Entity(), mCurrHealth{ 800.0f }, mMaxHealth{ 800.0f },
-    mAttackDamage{ 10.0f }, mAttackCooldown{ 0.75f }, isAlive { true } {}
-
 Boss1::Boss1(Vector2 position, Vector2 scale, const char *textureFilepath, EntityType entityType) :
-    Entity(position, scale, textureFilepath, entityType), mCurrHealth{ 100 }, mMaxHealth{ 100 },
-    mAttackDamage{ 10.0f }, mAttackCooldown{ 0.75f }, isAlive { true } {}
+    Entity(position, scale, textureFilepath, entityType), mCurrHealth{ 260 }, mMaxHealth{ 260 },
+    mAttackDamage{ 10.0f }, mAttackCooldown{ 0.75f }, isAlive { true },
+    bossAttack { LoadTexture("assets/starMap.png") }
+{
+    mProjectiles = new Projectile[25];
+    std::map<Direction, std::vector<int>> bossAnimationAtlas = { { RIGHT, { 0, 1, 2 } } };
+    for (int i = 0; i < 25; ++i)
+    {
+        mProjectiles[i].setPosition(mPosition);
+        mProjectiles[i].setScale({ 100, 100 });
+        mProjectiles[i].setTexture(&bossAttack);
+        mProjectiles[i].setEntityType(ATTACK);
+        mProjectiles[i].setSpriteSheetDimensions({ 1, 3 });
+        mProjectiles[i].setAnimationAtlas(bossAnimationAtlas);
+        mProjectiles[i].setSpeed(750.0f);
+        mProjectiles[i].setDamage(mAttackDamage);
+        mProjectiles[i].setTextureType(ATLAS);
+        mProjectiles[i].deactivate();
 
-Boss1::Boss1(Vector2 position, Vector2 scale, const char *textureFilepath, TextureType textureType,
-    Vector2 spriteSheetDimensions, std::map<Direction, std::vector<int>> animationAtlas, EntityType entityType) :
-    Entity(position, scale, textureFilepath, textureType, spriteSheetDimensions, animationAtlas, entityType),
-    mCurrHealth{ 100 }, mMaxHealth{ 100 }, mAttackDamage{ 10.0f }, mAttackCooldown{ 0.75f }, isAlive { true } {}
+        mProjectiles[i].setColliderDimensions({
+            mProjectiles[i].getScale().x / 2.0f,
+            mProjectiles[i].getScale().y / 2.0f
+        });
+    }
+}
 
-Boss1::~Boss1() {}
+Boss1::~Boss1() { delete [] mProjectiles; UnloadTexture(bossAttack); }
 
 void Boss1::update(float deltaTime, Entity *player, Map *map,
                   Entity *collidableEntities, int collisionCheckCount)
@@ -25,33 +40,24 @@ void Boss1::update(float deltaTime, Entity *player, Map *map,
             Lerp(getPosition().y, player->getPosition().y, deltaTime * 3.0f)
         });
 
-        for (size_t i = 0; i < mProjectiles.size(); ++i)
-        mProjectiles[i]->update(deltaTime, player);
+        for (size_t i = 0; i < 25; ++i)
+            mProjectiles[i].update(deltaTime, player);
 
-    for (size_t i = 0; i < mProjectiles.size(); ++i)
-    {
-        if (Vector2Distance(mPosition, mProjectiles[i]->getPosition()) > 2560.0f)
-            mProjectiles[i]->deactivate();
-
-        if (!mProjectiles[i]->isActive()) 
+        for (size_t i = 0; i < 25; ++i)
         {
-            delete mProjectiles[i];
-            mProjectiles[i] = nullptr;
-            mProjectiles.erase(mProjectiles.begin() + i);
-            --i;
+            if (Vector2Distance(mPosition, mProjectiles[i].getPosition()) > 2560.0f)
+                mProjectiles[i].deactivate();
         }
-    }
 
-    if (!canShoot) 
-    {
-        mCounter += deltaTime;
-        if (mCounter >= mAttackCooldown) 
-            { canShoot = true; mCounter = 0.0f; }
-    }
+        if (!canShoot) 
+        {
+            mCounter += deltaTime;
+            if (mCounter >= mAttackCooldown) 
+                { canShoot = true; mCounter = 0.0f; }
+        }
     }
 }
 
-std::map<Direction, std::vector<int>> bossAnimationAtlas = { { RIGHT, { 0, 1, 2 } } };
 
 void Boss1::shoot(Entity *player)
 {
@@ -59,18 +65,19 @@ void Boss1::shoot(Entity *player)
     canShoot = false;
     mCounter = 0.0f;
 
-    mProjectiles.push_back(
-        new Projectile{
-            mPosition, { 100, 100 }, "assets/starMap.png", ATLAS, { 1, 3 },
-            bossAnimationAtlas, ATTACK, 500.0f, mAttackDamage
+    for (int i = 0; i < 25; ++i)
+    {
+        if (!mProjectiles[i].isActive())
+        {
+            mProjectiles[i].setPosition(mPosition);
+            mProjectiles[i].shootBoss1(player);
+            break;
         }
-    );
-    
-    mProjectiles[mProjectiles.size()-1]->shootBoss1(player);
+    }
 }
 
 void Boss1::render()
 {
     Entity::render();
-    for (size_t i = 0; i < mProjectiles.size(); ++i) mProjectiles[i]->render();
+    for (size_t i = 0; i < 25; ++i) mProjectiles[i].render();
 }

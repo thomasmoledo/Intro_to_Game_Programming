@@ -6,7 +6,13 @@
 class Boss2 : public Entity
 {
 private:
-    std::vector<Entity*> mGridBars;
+    static constexpr int GRID_LINE_COUNT = 30;
+
+    Entity *mGridLines;
+    Texture2D verticalGridTexture1;
+    Texture2D verticalGridTexture2;
+    Texture2D horizontalGridTexture1;
+    Texture2D horizontalGridTexture2;
 
     float mAttackDamage,
           mAttackCooldown,
@@ -33,21 +39,11 @@ private:
     Sound damageStart;
 
 public:
-    Boss2();
     Boss2(
         Vector2     position,
         Vector2     scale,
         const char *textureFilepath,
         EntityType  entityType
-    );
-    Boss2(
-        Vector2                               position,
-        Vector2                               scale,
-        const char                           *textureFilepath,
-        TextureType                           textureType,
-        Vector2                               spriteSheetDimensions,
-        std::map<Direction, std::vector<int>> animationAtlas,
-        EntityType                            entityType
     );
     ~Boss2();
 
